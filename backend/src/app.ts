@@ -12,10 +12,14 @@ import routes from './routes'
 
 const { PORT = 3000 } = process.env
 const app = express()
+const corsConfig = {
+    credentials: true,
+    origin: true,
+};
 
 app.use(cookieParser())
 
-app.use(cors())
+app.use(cors(corsConfig))
 // app.use(cors({ origin: ORIGIN_ALLOW, credentials: true }));
 // app.use(express.static(path.join(__dirname, 'public')));
 
