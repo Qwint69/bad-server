@@ -11,6 +11,11 @@ import escapeRegExp from '../utils/escapeRegExp'
 
 // eslint-disable-next-line max-len
 // GET /orders?page=2&limit=5&sort=totalAmount&order=desc&orderDateFrom=2024-07-01&orderDateTo=2024-08-01&status=delivering&totalAmountFrom=100&totalAmountTo=1000&search=%2B1
+export const validatePhone = (phone: string): boolean => {
+    const phoneRegex =
+        /^[+]*[0-9]{1,4}[-\s]*\(?[0-9]{1,5}\)?[-\s]*[0-9]{1,5}[-\s]*[0-9]{1,5}$/
+    return phoneRegex.test(phone)
+}
 
 export const getOrders = async (
     req: Request,
@@ -230,6 +235,7 @@ export const getOrderCurrentUserByNumber = async (
     try {
         const order = await Order.findOne({
             orderNumber: req.params.orderNumber,
+            customer: userId,
         })
             .populate(['customer', 'products'])
             .orFail(
@@ -267,7 +273,9 @@ export const createOrder = async (
             req.body
 
         const sanitizedComment = sanitizeString(comment)
-
+        if (!validatePhone(phone)) {
+            throw new BadRequestError('Некорректный формат телефона')
+        }
         items.forEach((id: Types.ObjectId) => {
             const product = products.find((p: any) => p._id.equals(id))
             if (!product)
