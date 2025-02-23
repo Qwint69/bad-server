@@ -5,17 +5,11 @@ import NotFoundError from '../errors/not-found-error'
 import Order, { IOrder } from '../models/order'
 import Product, { IProduct } from '../models/product'
 import User from '../models/user'
-
 import { fixPaginationParams, sanitizeString } from '../utils/paginationUtils'
 import escapeRegExp from '../utils/escapeRegExp'
 
 // eslint-disable-next-line max-len
 // GET /orders?page=2&limit=5&sort=totalAmount&order=desc&orderDateFrom=2024-07-01&orderDateTo=2024-08-01&status=delivering&totalAmountFrom=100&totalAmountTo=1000&search=%2B1
-export const validatePhone = (phone: string): boolean => {
-    const phoneRegex =
-        /^[+]*[0-9]{1,4}[-\s]*\(?[0-9]{1,5}\)?[-\s]*[0-9]{1,5}[-\s]*[0-9]{1,5}$/
-    return phoneRegex.test(phone)
-}
 
 export const getOrders = async (
     req: Request,
@@ -273,8 +267,10 @@ export const createOrder = async (
             req.body
 
         const sanitizedComment = sanitizeString(comment)
-        if (!validatePhone(phone)) {
-            throw new BadRequestError('Некорректный формат телефона')
+        if (typeof phone !== 'string' || phone.length > 18) {
+            return next(
+                new BadRequestError('Недопустимая длина номера телефона')
+            )
         }
         items.forEach((id: Types.ObjectId) => {
             const product = products.find((p: any) => p._id.equals(id))
