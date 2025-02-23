@@ -5,7 +5,7 @@ import 'dotenv/config'
 import express, { json, urlencoded } from 'express'
 import mongoose from 'mongoose'
 import path from 'path'
-import { DB_ADDRESS } from './config'
+import { COOKIES_SECRET, DB_ADDRESS, ORIGIN_ALLOW } from './config'
 import errorHandler from './middlewares/error-handler'
 import serveStatic from './middlewares/serverStatic'
 import routes from './routes'
@@ -13,15 +13,14 @@ import routes from './routes'
 const { PORT = 3000 } = process.env
 const app = express()
 const corsConfig = {
+    origin: ORIGIN_ALLOW,
     credentials: true,
-    origin: true,
-};
+    allowedHeaders: ['Authorization', 'Content-Type', 'X-CSRF-Token'],
+}
 
-app.use(cookieParser())
+app.use(cookieParser(COOKIES_SECRET))
 
 app.use(cors(corsConfig))
-// app.use(cors({ origin: ORIGIN_ALLOW, credentials: true }));
-// app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(serveStatic(path.join(__dirname, 'public')))
 
@@ -32,8 +31,6 @@ app.options('*', cors())
 app.use(routes)
 app.use(errors())
 app.use(errorHandler)
-
-// eslint-disable-next-line no-console
 
 const bootstrap = async () => {
     try {

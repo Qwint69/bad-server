@@ -9,6 +9,7 @@ import {
     updateCurrentUser,
 } from '../controllers/auth'
 import auth from '../middlewares/auth'
+import { doubleCsrfProtection } from '../middlewares/csrf'
 
 const authRouter = Router()
 

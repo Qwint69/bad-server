@@ -1,16 +1,19 @@
-import { Request, Express } from 'express'
+import { Request, Response, NextFunction } from 'express'
 import multer, { FileFilterCallback } from 'multer'
 import { join } from 'path'
-
-type DestinationCallback = (error: Error | null, destination: string) => void
-type FileNameCallback = (error: Error | null, filename: string) => void
+import fs from 'fs'
+import sharp from 'sharp'
+import { v4 as uuidv4 } from 'uuid'
+import {
+    MAX_FILE_SIZE,
+    MIN_FILE_SIZE,
+    ALLOWED_MIME_TYPES,
+    MIN_IMAGE_WIDTH,
+    MIN_IMAGE_HEIGHT,
+} from '../config'
 
 const storage = multer.diskStorage({
-    destination: (
-        _req: Request,
-        _file: Express.Multer.File,
-        cb: DestinationCallback
-    ) => {
+    destination: (_req, _file, cb) => {
         cb(
             null,
             join(
@@ -21,34 +24,72 @@ const storage = multer.diskStorage({
             )
         )
     },
-
-    filename: (
-        _req: Request,
-        file: Express.Multer.File,
-        cb: FileNameCallback
-    ) => {
-        cb(null, file.originalname)
+    filename: (_req, file, cb) => {
+        const uniqueName = `${uuidv4()}-${Date.now()}${file.originalname.substring(file.originalname.lastIndexOf('.'))}`
+        cb(null, uniqueName)
     },
 })
-
-const types = [
-    'image/png',
-    'image/jpg',
-    'image/jpeg',
-    'image/gif',
-    'image/svg+xml',
-]
 
 const fileFilter = (
     _req: Request,
     file: Express.Multer.File,
     cb: FileFilterCallback
 ) => {
-    if (!types.includes(file.mimetype)) {
+    if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
         return cb(null, false)
     }
-
-    return cb(null, true)
+    cb(null, true)
 }
 
-export default multer({ storage, fileFilter })
+const upload = multer({
+    storage,
+    fileFilter,
+    limits: { fileSize: MAX_FILE_SIZE },
+})
+
+const fileSizeCheck = (req: Request, res: Response, next: NextFunction) => {
+    if (!req.file) {
+        return res.status(400).json({ message: 'Файл не загружен' })
+    }
+    if (req.file.size < MIN_FILE_SIZE || req.file.size > MAX_FILE_SIZE) {
+        return res
+            .status(400)
+            .json({
+                message: `Файл должен быть размером от ${MIN_FILE_SIZE} до ${MAX_FILE_SIZE} байт`,
+            })
+    }
+    next()
+}
+
+const imageDimensionsCheck = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    if (!req.file) {
+        return res.status(400).json({ message: 'Файл не загружен' })
+    }
+
+    try {
+        const image = sharp(req.file.path)
+        const metadata = await image.metadata()
+
+        if (
+            metadata.width! < MIN_IMAGE_WIDTH ||
+            metadata.height! < MIN_IMAGE_HEIGHT
+        ) {
+            fs.unlinkSync(req.file.path)
+            return res
+                .status(400)
+                .json({
+                    message: `Минимальные размеры изображения: ${MIN_IMAGE_WIDTH}x${MIN_IMAGE_HEIGHT}px`,
+                })
+        }
+
+        next()
+    } catch (error) {
+        return res.status(500).json({ message: 'Ошибка обработки изображения' })
+    }
+}
+
+export default { upload, fileSizeCheck, imageDimensionsCheck }
