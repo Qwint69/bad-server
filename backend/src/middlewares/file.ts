@@ -60,6 +60,18 @@ const fileSizeCheck = (req: Request, res: Response, next: NextFunction) => {
     next()
 }
 
+const checkImageMetadata = async (
+    filePath: string
+): Promise<sharp.Metadata> => {
+    try {
+        const metadata = await sharp(filePath).metadata()
+        return metadata
+    } catch (error) {
+        console.error('Ошибка чтения метаданных изображения:', error)
+        throw new Error('Недопустимый файл изображения')
+    }
+}
+
 const imageDimensionsCheck = async (
     req: Request,
     res: Response,
@@ -70,14 +82,9 @@ const imageDimensionsCheck = async (
     }
 
     try {
-        const image = sharp(req.file.path)
-        const metadata = await image.metadata()
-
-        if (
-            metadata.width! < MIN_IMAGE_WIDTH ||
-            metadata.height! < MIN_IMAGE_HEIGHT
-        ) {
-            fs.unlinkSync(req.file.path)
+        const metadata = await checkImageMetadata(req.file.path)
+        const { width = 0, height = 0 } = metadata
+        if (width < MIN_IMAGE_WIDTH || height < MIN_IMAGE_HEIGHT) {
             return res.status(400).json({
                 message: `Минимальные размеры изображения: ${MIN_IMAGE_WIDTH}x${MIN_IMAGE_HEIGHT}px`,
             })
@@ -91,6 +98,5 @@ const imageDimensionsCheck = async (
 const upload = multer({
     storage,
     fileFilter,
-    limits: { fileSize: MAX_FILE_SIZE },
 })
 export default { upload, fileSizeCheck, imageDimensionsCheck }
