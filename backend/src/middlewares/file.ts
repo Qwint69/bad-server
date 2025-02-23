@@ -41,22 +41,21 @@ const fileFilter = (
     cb(null, true)
 }
 
-const upload = multer({
-    storage,
-    fileFilter,
-    limits: { fileSize: MAX_FILE_SIZE },
-})
-
 const fileSizeCheck = (req: Request, res: Response, next: NextFunction) => {
-    if (!req.file) {
-        return res.status(400).json({ message: 'Файл не загружен' })
-    }
-    if (req.file.size < MIN_FILE_SIZE || req.file.size > MAX_FILE_SIZE) {
-        return res
-            .status(400)
-            .json({
-                message: `Файл должен быть размером от ${MIN_FILE_SIZE} до ${MAX_FILE_SIZE} байт`,
+    if (req.file) {
+        const fileSize = req.file.size
+        if (fileSize < MIN_FILE_SIZE) {
+            return res.status(400).send({
+                message:
+                    'Размер файла слишком мал. Минимальный размер файла — 2 КБ.',
             })
+        }
+        if (fileSize > MAX_FILE_SIZE) {
+            return res.status(400).send({
+                message:
+                    'Размер файла слишком велик. Максимальный размер файла — 10 МБ.',
+            })
+        }
     }
     next()
 }
@@ -79,11 +78,9 @@ const imageDimensionsCheck = async (
             metadata.height! < MIN_IMAGE_HEIGHT
         ) {
             fs.unlinkSync(req.file.path)
-            return res
-                .status(400)
-                .json({
-                    message: `Минимальные размеры изображения: ${MIN_IMAGE_WIDTH}x${MIN_IMAGE_HEIGHT}px`,
-                })
+            return res.status(400).json({
+                message: `Минимальные размеры изображения: ${MIN_IMAGE_WIDTH}x${MIN_IMAGE_HEIGHT}px`,
+            })
         }
 
         next()
@@ -91,5 +88,9 @@ const imageDimensionsCheck = async (
         return res.status(500).json({ message: 'Ошибка обработки изображения' })
     }
 }
-
+const upload = multer({
+    storage,
+    fileFilter,
+    limits: { fileSize: MAX_FILE_SIZE },
+})
 export default { upload, fileSizeCheck, imageDimensionsCheck }
