@@ -7,14 +7,14 @@ const uploadRouter = Router();
 
 uploadRouter.post(
   '/',
+  fileMiddleware.upload.single('file'),
   (req, res, next) => {
     if (req.file) {
       const fileExtension = req.file.originalname.split('.').pop();
-      req.file.filename = `${uuidv4()}.${fileExtension}`;
+      req.file.filename = `${uuidv4()}-${Date.now()}.${fileExtension}`;
     }
     next();
   },
-  fileMiddleware.upload.single('file'),
   fileMiddleware.fileSizeCheck,
   fileMiddleware.imageDimensionsCheck,
   uploadFile

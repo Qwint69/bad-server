@@ -1,4 +1,5 @@
 import { CookieOptions } from 'express'
+import rateLimit from 'express-rate-limit'
 import ms from 'ms'
 
 export const { PORT = '3000' } = process.env
@@ -34,3 +35,18 @@ export const ALLOWED_MIME_TYPES = [
 ]
 export const MIN_IMAGE_WIDTH = 50
 export const MIN_IMAGE_HEIGHT = 50
+export const corsConfig = {
+    origin: ORIGIN_ALLOW,
+    credentials: true,
+    allowedHeaders: [
+        'Access-Control-Allow-Origin',
+        'Origin',
+        'Content-Type',
+        'Authorization',
+    ],
+}
+export const limiter = rateLimit({
+    windowMs: 10 * 1000,
+    max: 100,
+    message: 'Too many requests, please try again later.',
+})
