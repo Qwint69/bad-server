@@ -4,6 +4,7 @@ import validator from 'validator'
 import { PaymentType, phoneRegExp } from '../middlewares/validations'
 import Counter from './counter'
 import User from './user'
+import escapeRegExp from '../utils/escapeRegExp'
 
 export enum StatusType {
     Cancelled = 'cancelled',
@@ -60,8 +61,9 @@ const orderSchema: Schema = new Schema(
             type: String,
             required: [true, 'Поле "phone" должно быть заполнено'],
             validate: {
-                validator: (v: string) => phoneRegExp.test(v),
-                message: 'Поле "phone" должно быть валидным телефоном.',
+                validator: (v: string) => escapeRegExp.length <= 15 && phoneRegExp.test(v),
+                message:
+                    'Поле "phone" должно быть валидным телефоном и не превышать 15 символов.',
             },
         },
         comment: {
