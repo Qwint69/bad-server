@@ -5,7 +5,7 @@ import 'dotenv/config'
 import express, { json, urlencoded } from 'express'
 import mongoose from 'mongoose'
 import path from 'path'
-import { COOKIES_SECRET, DB_ADDRESS, ORIGIN_ALLOW } from './config'
+import { DB_ADDRESS, ORIGIN_ALLOW } from './config'
 import errorHandler from './middlewares/error-handler'
 import serveStatic from './middlewares/serverStatic'
 import routes from './routes'
@@ -15,10 +15,15 @@ const app = express()
 const corsConfig = {
     origin: ORIGIN_ALLOW,
     credentials: true,
-    allowedHeaders: ['Authorization', 'Content-Type', 'X-CSRF-Token'],
+    allowedHeaders: [
+        'Access-Control-Allow-Origin',
+        'Origin',
+        'Content-Type',
+        'Authorization',
+    ],
 }
 
-app.use(cookieParser(COOKIES_SECRET))
+app.use(cookieParser())
 
 app.use(cors(corsConfig))
 
