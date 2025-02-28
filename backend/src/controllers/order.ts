@@ -7,6 +7,7 @@ import Product, { IProduct } from '../models/product'
 import User from '../models/user'
 import { fixPaginationParams, sanitizeString } from '../utils/paginationUtils'
 import escapeRegExp from '../utils/escapeRegExp'
+import validator from 'validator'
 
 // eslint-disable-next-line max-len
 // GET /orders?page=2&limit=5&sort=totalAmount&order=desc&orderDateFrom=2024-07-01&orderDateTo=2024-08-01&status=delivering&totalAmountFrom=100&totalAmountTo=1000&search=%2B1
@@ -267,10 +268,8 @@ export const createOrder = async (
             req.body
 
         const sanitizedComment = sanitizeString(comment)
-        if (typeof phone !== 'string' || phone.length > 18) {
-            return next(
-                new BadRequestError('Недопустимая длина номера телефона')
-            )
+        if (phone && !validator.isMobilePhone(phone)) {
+            throw new BadRequestError('Неверный формат номера телефона')
         }
         items.forEach((id: Types.ObjectId) => {
             const product = products.find((p: any) => p._id.equals(id))

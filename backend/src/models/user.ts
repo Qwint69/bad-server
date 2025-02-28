@@ -14,6 +14,7 @@ export enum Role {
 }
 
 export interface IUser extends Document {
+    _id: Types.ObjectId,
     name: string
     email: string
     password: string
@@ -135,7 +136,7 @@ userSchema.pre('save', async function hashingPassword(next) {
 // Можно лучше: централизованное создание accessToken и  refresh токена
 
 userSchema.methods.generateAccessToken = function generateAccessToken() {
-    const user: any = this
+    const user = this as IUser
     // Создание accessToken токена возможно в контроллере авторизации
     return jwt.sign(
         {
@@ -152,7 +153,7 @@ userSchema.methods.generateAccessToken = function generateAccessToken() {
 
 userSchema.methods.generateRefreshToken =
     async function generateRefreshToken() {
-        const user: any = this
+        const user = this as IUser
         // Создание refresh токена возможно в контроллере авторизации/регистрации
         const refreshToken = jwt.sign(
             {
@@ -195,7 +196,7 @@ userSchema.statics.findUserByCredentials = async function findByCredentials(
 }
 
 userSchema.methods.calculateOrderStats = async function calculateOrderStats() {
-    const user = this
+    const user = this as IUser
     const orderStats = await mongoose.model('order').aggregate([
         { $match: { customer: user._id } },
         {
