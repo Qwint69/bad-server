@@ -46,7 +46,7 @@ export const corsConfig = {
     ],
 }
 export const limiter = rateLimit({
-    windowMs: 10 * 1000,
-    max: 100,
+    windowMs: 60 * 1000,
+    max: 50,
     message: 'Too many requests, please try again later.',
 })
