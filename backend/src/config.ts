@@ -24,17 +24,6 @@ export const REFRESH_TOKEN = {
         } as CookieOptions,
     },
 }
-export const MAX_FILE_SIZE = 10 * 1024 * 1024
-export const MIN_FILE_SIZE = 2 * 1024
-export const ALLOWED_MIME_TYPES = [
-    'image/png',
-    'image/jpg',
-    'image/jpeg',
-    'image/gif',
-    'image/svg+xml',
-]
-export const MIN_IMAGE_WIDTH = 50
-export const MIN_IMAGE_HEIGHT = 50
 export const corsConfig = {
     origin: ORIGIN_ALLOW,
     credentials: true,
@@ -47,6 +36,6 @@ export const corsConfig = {
 }
 export const limiter = rateLimit({
     windowMs: 60 * 1000,
-    max: 50,
+    max: 49,
     message: 'Too many requests, please try again later.',
 })
