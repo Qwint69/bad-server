@@ -17,20 +17,10 @@ const orderRouter = Router()
 orderRouter.post('/', auth, validateOrderBody, createOrder)
 orderRouter.get('/all', auth, roleGuardMiddleware(Role.Admin), getOrders)
 orderRouter.get('/all/me', auth, getOrdersCurrentUser)
-orderRouter.get(
-    '/:orderNumber',
-    auth,
-    roleGuardMiddleware(Role.Admin),
-    getOrderByNumber
-)
+orderRouter.get('/:orderNumber', auth, getOrderByNumber)
 orderRouter.get('/me/:orderNumber', auth, getOrderCurrentUserByNumber)
-orderRouter.patch(
-    '/:orderNumber',
-    auth,
-    roleGuardMiddleware(Role.Admin),
-    updateOrder
-)
+orderRouter.patch('/:orderNumber', auth, updateOrder)
 
-orderRouter.delete('/:id', auth, roleGuardMiddleware(Role.Admin), deleteOrder)
+orderRouter.delete('/:id', auth, deleteOrder)
 
 export default orderRouter
