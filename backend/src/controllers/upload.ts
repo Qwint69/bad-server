@@ -45,6 +45,7 @@ export const uploadFile = async (
 
         return res.status(constants.HTTP_STATUS_CREATED).json({
             fileName: filePath,
+            originalName: req.file.originalname,
         })
     } catch (error) {
         return next(error)
