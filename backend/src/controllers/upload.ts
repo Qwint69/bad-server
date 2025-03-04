@@ -39,25 +39,14 @@ export const uploadFile = async (
             return next(new BadRequestError('Ошибка при обработке изображения'))
         }
 
-        const fileName = process.env.UPLOAD_PATH
-            ? `/${process.env.UPLOAD_PATH}/${req.file.filename}`
-            : `/${req.file.filename}`
+        const filePath = process.env.UPLOAD_PATH
+            ? join('/', process.env.UPLOAD_PATH, req.file.filename)
+            : join('/', req.file.filename)
 
-        res.status(constants.HTTP_STATUS_CREATED).json({
-            fileName,
-            originalName: req.file.originalname,
+        return res.status(constants.HTTP_STATUS_CREATED).json({
+            fileName: filePath,
         })
     } catch (error) {
-        //     const uniqueFileName =
-        //         faker.string.uuid() + extname(req.file.originalname)
-        //     const filePath = process.env.UPLOAD_PATH
-        //         ? join('/', process.env.UPLOAD_PATH, uniqueFileName)
-        //         : join('/', uniqueFileName)
-
-        //     return res.status(constants.HTTP_STATUS_CREATED).json({
-        //         fileName: filePath,
-        //     })
-        // }
         return next(error)
     }
 }
