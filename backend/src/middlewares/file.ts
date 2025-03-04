@@ -28,7 +28,7 @@ const storage = multer.diskStorage({
         file: Express.Multer.File,
         cb: FileNameCallback
     ) => {
-        const uniqueName = faker.string.uuid() + extname(file.originalname)
+        const uniqueName = `${faker.string.alphanumeric(10)}-${faker.string.uuid()}${extname(file.originalname)}`
         cb(null, uniqueName)
     },
 })
@@ -55,5 +55,5 @@ const fileFilter = (
 export default multer({
     storage,
     fileFilter,
-    limits: { fileSize: 10 * 1024 * 1024 }, 
+    limits: { fileSize: 10 * 1024 * 1024 },
 })
