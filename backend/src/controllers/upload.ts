@@ -1,10 +1,63 @@
+// import { NextFunction, Request, Response } from 'express'
+// import { constants } from 'http2'
+// import { join } from 'path'
+// import { writeFile, unlink } from 'fs/promises'
+// import sharp from 'sharp'
+// import { tmpdir } from 'os'
+// import BadRequestError from '../errors/bad-request-error'
+
+// export const uploadFile = async (
+//     req: Request,
+//     res: Response,
+//     next: NextFunction
+// ) => {
+//     if (!req.file) {
+//         return next(new BadRequestError('Файл не загружен'))
+//     }
+
+//     const fileSize = req.file.size
+//     if (fileSize < 2048) {
+//         return next(new BadRequestError('Размер файла должен быть больше 2KB'))
+//     }
+//     if (fileSize > 10 * 1024 * 1024) {
+//         return next(
+//             new BadRequestError('Размер файла не должен превышать 10MB')
+//         )
+//     }
+
+//     try {
+//         const image = await sharp(req.file.buffer).metadata()
+//         if (!image.format) {
+//             return next(new BadRequestError('Файл не является изображением'))
+//         }
+//     } catch {
+//         return next(new BadRequestError('Ошибка при обработке изображения'))
+//     }
+
+//     const tempFilePath = join(tmpdir(), req.file.filename)
+
+//     try {
+//         await writeFile(tempFilePath, req.file.buffer)
+
+//         const filePath = process.env.UPLOAD_PATH
+//             ? `/${process.env.UPLOAD_PATH}/${req.file.filename}`
+//             : `/${req.file.filename}`
+
+//         return res.status(constants.HTTP_STATUS_CREATED).json({
+//             fileName: filePath,
+//             originalName: req.file.originalname,
+//         })
+//     } catch (error) {
+//         return next(error)
+//     }
+// }
 import { NextFunction, Request, Response } from 'express'
 import { constants } from 'http2'
-import { join } from 'path'
-import { writeFile, unlink } from 'fs/promises'
+import { loadEsm } from 'load-esm'
+import fs from 'fs/promises'
 import sharp from 'sharp'
-import { tmpdir } from 'os'
 import BadRequestError from '../errors/bad-request-error'
+import { types } from '../middlewares/file'
 
 export const uploadFile = async (
     req: Request,
@@ -15,39 +68,52 @@ export const uploadFile = async (
         return next(new BadRequestError('Файл не загружен'))
     }
 
-    const fileSize = req.file.size
-    if (fileSize < 2048) {
-        return next(new BadRequestError('Размер файла должен быть больше 2KB'))
-    }
-    if (fileSize > 10 * 1024 * 1024) {
-        return next(
-            new BadRequestError('Размер файла не должен превышать 10MB')
-        )
-    }
+    const filePath = req.file.path
+    let file: Buffer
 
     try {
-        const image = await sharp(req.file.buffer).metadata()
-        if (!image.format) {
-            return next(new BadRequestError('Файл не является изображением'))
+        const { fileTypeFromBuffer } =
+            await loadEsm<typeof import('file-type')>('file-type')
+
+        file = await fs.readFile(filePath)
+
+        const type = await fileTypeFromBuffer(file)
+        if (!type) {
+            throw new BadRequestError('Тип файла не определен')
         }
-    } catch {
-        return next(new BadRequestError('Ошибка при обработке изображения'))
-    }
+        if (!types.includes(type.mime)) {
+            throw new BadRequestError('Неверный формат файла')
+        }
 
-    const tempFilePath = join(tmpdir(), req.file.filename)
+        if (req.file.size < 2048) {
+            throw new BadRequestError('Файл слишком маленький')
+        }
+        if (req.file.size > 10 * 1024 * 1024) {
+            throw new BadRequestError('Файл слишком большой')
+        }
 
-    try {
-        await writeFile(tempFilePath, req.file.buffer)
+        const metadata = await sharp(file).metadata()
+        if (!metadata.width || !metadata.height) {
+            throw new BadRequestError('Неверный формат файла')
+        }
 
-        const filePath = process.env.UPLOAD_PATH
+        const fileName = process.env.UPLOAD_PATH
             ? `/${process.env.UPLOAD_PATH}/${req.file.filename}`
             : `/${req.file.filename}`
 
-        return res.status(constants.HTTP_STATUS_CREATED).json({
-            fileName: filePath,
+        res.status(constants.HTTP_STATUS_CREATED).json({
+            fileName,
             originalName: req.file.originalname,
         })
     } catch (error) {
-        return next(error)
+        await fs.unlink(filePath).catch(() => {})
+
+        if (error instanceof BadRequestError) {
+            return next(error)
+        }
+
+        return next(new BadRequestError('Неверный формат файла'))
     }
 }
+
+export default {}

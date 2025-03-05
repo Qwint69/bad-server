@@ -37,7 +37,7 @@ const storage = multer.diskStorage({
     },
 })
 
-const types = [
+export const types = [
     'image/png',
     'image/jpg',
     'image/jpeg',
