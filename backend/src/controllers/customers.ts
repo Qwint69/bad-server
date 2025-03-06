@@ -3,6 +3,7 @@ import { FilterQuery } from 'mongoose'
 import NotFoundError from '../errors/not-found-error'
 import Order from '../models/order'
 import User, { IUser } from '../models/user'
+import { fixPaginationParams } from '../utils/paginationUtils'
 
 // TODO: Добавить guard admin
 // eslint-disable-next-line max-len
@@ -13,9 +14,9 @@ export const getCustomers = async (
     next: NextFunction
 ) => {
     try {
+        const { page, limit } = fixPaginationParams(req.query); 
+
         const {
-            page = 1,
-            limit = 10,
             sortField = 'createdAt',
             sortOrder = 'desc',
             registrationDateFrom,
@@ -27,98 +28,98 @@ export const getCustomers = async (
             orderCountFrom,
             orderCountTo,
             search,
-        } = req.query
+        } = req.query;
 
-        const filters: FilterQuery<Partial<IUser>> = {}
+        const filters: FilterQuery<Partial<IUser>> = {};
 
         if (registrationDateFrom) {
             filters.createdAt = {
                 ...filters.createdAt,
                 $gte: new Date(registrationDateFrom as string),
-            }
+            };
         }
 
         if (registrationDateTo) {
-            const endOfDay = new Date(registrationDateTo as string)
-            endOfDay.setHours(23, 59, 59, 999)
+            const endOfDay = new Date(registrationDateTo as string);
+            endOfDay.setHours(23, 59, 59, 999);
             filters.createdAt = {
                 ...filters.createdAt,
                 $lte: endOfDay,
-            }
+            };
         }
 
         if (lastOrderDateFrom) {
             filters.lastOrderDate = {
                 ...filters.lastOrderDate,
                 $gte: new Date(lastOrderDateFrom as string),
-            }
+            };
         }
 
         if (lastOrderDateTo) {
-            const endOfDay = new Date(lastOrderDateTo as string)
-            endOfDay.setHours(23, 59, 59, 999)
+            const endOfDay = new Date(lastOrderDateTo as string);
+            endOfDay.setHours(23, 59, 59, 999);
             filters.lastOrderDate = {
                 ...filters.lastOrderDate,
                 $lte: endOfDay,
-            }
+            };
         }
 
         if (totalAmountFrom) {
             filters.totalAmount = {
                 ...filters.totalAmount,
                 $gte: Number(totalAmountFrom),
-            }
+            };
         }
 
         if (totalAmountTo) {
             filters.totalAmount = {
                 ...filters.totalAmount,
                 $lte: Number(totalAmountTo),
-            }
+            };
         }
 
         if (orderCountFrom) {
             filters.orderCount = {
                 ...filters.orderCount,
                 $gte: Number(orderCountFrom),
-            }
+            };
         }
 
         if (orderCountTo) {
             filters.orderCount = {
                 ...filters.orderCount,
                 $lte: Number(orderCountTo),
-            }
+            };
         }
 
         if (search) {
-            const searchRegex = new RegExp(search as string, 'i')
+            const searchRegex = new RegExp(search as string, 'i');
             const orders = await Order.find(
                 {
                     $or: [{ deliveryAddress: searchRegex }],
                 },
                 '_id'
-            )
+            );
 
-            const orderIds = orders.map((order) => order._id)
+            const orderIds = orders.map((order) => order._id);
 
             filters.$or = [
                 { name: searchRegex },
                 { lastOrder: { $in: orderIds } },
-            ]
+            ];
         }
 
-        const sort: { [key: string]: any } = {}
+        const sort: { [key: string]: any } = {};
 
         if (sortField && sortOrder) {
-            sort[sortField as string] = sortOrder === 'desc' ? -1 : 1
+            sort[sortField as string] = sortOrder === 'desc' ? -1 : 1;
         }
 
         const options = {
             sort,
-            skip: (Number(page) - 1) * Number(limit),
-            limit: Number(limit),
-        }
+            skip: (page - 1) * limit,
+            limit,
+        };
 
         const users = await User.find(filters, null, options).populate([
             'orders',
@@ -134,24 +135,24 @@ export const getCustomers = async (
                     path: 'customer',
                 },
             },
-        ])
+        ]);
 
-        const totalUsers = await User.countDocuments(filters)
-        const totalPages = Math.ceil(totalUsers / Number(limit))
+        const totalUsers = await User.countDocuments(filters);
+        const totalPages = Math.ceil(totalUsers / limit);
 
         res.status(200).json({
             customers: users,
             pagination: {
                 totalUsers,
                 totalPages,
-                currentPage: Number(page),
-                pageSize: Number(limit),
+                currentPage: page,
+                pageSize: limit,
             },
-        })
+        });
     } catch (error) {
-        next(error)
+        next(error);
     }
-}
+};
 
 // TODO: Добавить guard admin
 // Get /customers/:id

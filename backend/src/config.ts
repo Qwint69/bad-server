@@ -1,7 +1,9 @@
 import { CookieOptions } from 'express'
+import rateLimit from 'express-rate-limit'
 import ms from 'ms'
 
 export const { PORT = '3000' } = process.env
+export const { ORIGIN_ALLOW = 'http://localhost:5173' } = process.env
 export const { DB_ADDRESS = 'mongodb://127.0.0.1:27017/weblarek' } = process.env
 export const { JWT_SECRET = 'JWT_SECRET' } = process.env
 export const ACCESS_TOKEN = {
@@ -22,3 +24,18 @@ export const REFRESH_TOKEN = {
         } as CookieOptions,
     },
 }
+export const corsConfig = {
+    origin: ORIGIN_ALLOW,
+    credentials: true,
+    allowedHeaders: [
+        'Access-Control-Allow-Origin',
+        'Origin',
+        'Content-Type',
+        'Authorization',
+    ],
+}
+export const limiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 49,
+    message: 'Too many requests, please try again later.',
+})
